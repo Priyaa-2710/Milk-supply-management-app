@@ -38,15 +38,56 @@ const addMilkEntry = async (req, res) => {
 };
 
 // Get milk entries for a date
+// Get milk entries for a date (with customer name)
 const getMilkEntriesByDate = async (req, res) => {
   try {
     const { date } = req.query;
-    const entries = await MilkEntry.find({ date });
+
+    if (!date) {
+      return res.status(400).json({ message: "Date is required" });
+    }
+
+    const entries = await MilkEntry.aggregate([
+      { $match: { date } },
+
+      {
+        $lookup: {
+          from: "customers",
+          localField: "customerPhone",
+          foreignField: "phone",
+          as: "customer"
+        }
+      },
+
+      {
+        $unwind: {
+          path: "$customer",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+
+      {
+        $project: {
+          _id: 1,
+          customerPhone: 1,
+          customerName: { $ifNull: ["$customer.name", "—"] },
+          date: 1,
+          session: 1,
+          quantity: 1,
+          pricePerLiter: 1,
+          amount: 1
+        }
+      },
+
+      { $sort: { session: 1 } }
+    ]);
+
     res.json(entries);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // Get all entries for a customer
 const getEntriesByCustomer = async (req, res) => {

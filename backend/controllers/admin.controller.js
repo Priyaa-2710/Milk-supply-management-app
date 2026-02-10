@@ -34,28 +34,41 @@ const getTodaySummary = async (req, res) => {
 // Get pending monthly bills
 const getPendingBills = async (req, res) => {
   try {
-    const { month } = req.query; // YYYY-MM
-    const bills = await MonthlyBill.find({ month, isPaid: false }).sort({ customerPhone: 1 });
+    const month =
+      req.query.month || new Date().toISOString().slice(0, 7); // YYYY-MM
+
+    const bills = await MonthlyBill.find({
+  month,
+  unpaidAmount: { $gt: 0 }
+}).sort({ customerPhone: 1 });
+
     res.json(bills);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+
 // Get total collection for a month
 const getMonthlyCollection = async (req, res) => {
   try {
     const { month } = req.query;
     const bills = await MonthlyBill.find({ month });
-    const totalAmount = bills.reduce((sum, bill) => sum + bill.totalAmount, 0);
-    const totalPending = bills
-      .filter((bill) => !bill.isPaid)
-      .reduce((sum, bill) => sum + bill.totalAmount, 0);
 
-    res.json({ month, totalAmount, totalPending });
+    const totalAmount = bills.reduce((s, b) => s + b.totalAmount, 0);
+    const totalPaid = bills.reduce((s, b) => s + b.paidAmount, 0);
+    const totalPending = bills.reduce((s, b) => s + b.unpaidAmount, 0);
+
+    res.json({
+      month,
+      totalAmount,
+      totalPaid,
+      totalPending
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 module.exports={getTodaySummary,getPendingBills,getMonthlyCollection}

@@ -14,13 +14,10 @@ const createCustomer = async (req,res)=>{
 
 // get ALL customers
 const getCustomers = async (req, res) => {
-  try {
-    const customers = await Customer.find().sort({ createdAt: -1 });
-    res.json(customers);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  const customers = await Customer.find({ isActive: true }).sort({ name: 1 });
+  res.json(customers);
 };
+
 
 // update customer
 const updateCustomer = async (req, res) => {
@@ -38,5 +35,42 @@ const updateCustomer = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+const deactivateCustomer = async (req, res) => {
+  const { phone } = req.params;
 
-module.exports= {createCustomer,getCustomers,updateCustomer}
+  const customer = await Customer.findOneAndUpdate(
+    { phone },
+    { isActive: false },
+    { new: true }
+  );
+
+  if (!customer) {
+    return res.status(404).json({ message: "Customer not found" });
+  }
+
+  res.json({ message: "Customer deactivated", customer });
+};
+
+const getInactiveCustomers = async (req, res) => {
+  const customers = await Customer.find({ isActive: false }).sort({ name: 1 });
+  res.json(customers);
+};
+
+const reactivateCustomer = async (req, res) => {
+  const { phone } = req.params;
+
+  const customer = await Customer.findOneAndUpdate(
+    { phone },
+    { isActive: true },
+    { new: true }
+  );
+
+  if (!customer) {
+    return res.status(404).json({ message: "Customer not found" });
+  }
+
+  res.json({ message: "Customer reactivated", customer });
+};
+
+
+module.exports= {createCustomer,getCustomers,updateCustomer,deactivateCustomer,getInactiveCustomers,reactivateCustomer}

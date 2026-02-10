@@ -7,6 +7,7 @@ const monthlyBillRoutes = require("./routes/monthlyBill.routes");
 const adminRoutes = require("./routes/admin.routes");
 const authRoutes = require("./routes/auth.routes");
 const authMiddleware = require("./middleware/auth");
+const paymentRoutes=require("./routes/payment.routes")
 
 const app = express();
 
@@ -15,10 +16,12 @@ app.use(express.json());
 
 app.use("/customers",customerRoutes)
 // Protect all admin dashboard routes
-app.use("/milk-price",authMiddleware,milkPriceRoutes)
+app.use("/milk_price",authMiddleware,milkPriceRoutes)
 app.use("/milk-entry",authMiddleware,milkEntryRoutes)
 app.use("/monthly-bill",authMiddleware,monthlyBillRoutes)
 app.use("/admin",authMiddleware,adminRoutes)
 app.use("/auth", authRoutes);
+app.use("/payments", paymentRoutes);
+
 
 module.exports=app;

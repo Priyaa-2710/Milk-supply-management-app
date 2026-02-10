@@ -19,9 +19,14 @@ const monthlyBillSchema = new mongoose.Schema(
       type: Number,
       required: true
     },
-    isPaid: {
-      type: Boolean,
-      default: false
+     paidAmount: {
+      type: Number,
+      default: 0
+    },
+
+    unpaidAmount: {
+      type: Number,
+      default: 0
     }
   },
   { timestamps: true }

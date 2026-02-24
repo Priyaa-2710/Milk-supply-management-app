@@ -73,6 +73,10 @@ const Login = () => {
           Login
         </button>
 
+        <p>
+  Don’t have an account? <Link to="/register">Register</Link>
+</p>
+
       </form>
     </div>
   </div>

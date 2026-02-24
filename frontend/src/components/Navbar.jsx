@@ -1,6 +1,13 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 const Navbar = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
   const linkClass = ({ isActive }) =>
     `px-3 py-2 rounded-md text-sm font-medium transition
      ${
@@ -14,7 +21,7 @@ const Navbar = () => {
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex h-16 items-center justify-between">
           
-          {/* Logo / Brand */}
+          {/* Logo */}
           <div className="text-xl font-bold text-[#b37c4d]">
             Milk Manager
           </div>
@@ -36,6 +43,14 @@ const Navbar = () => {
             <NavLink to="/monthly-bill" className={linkClass}>
               Billing
             </NavLink>
+
+            {/* Logout Button */}
+            <button
+              onClick={handleLogout}
+              className="px-3 py-2 rounded-md text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition"
+            >
+              Logout
+            </button>
           </div>
         </div>
       </div>

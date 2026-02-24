@@ -5,8 +5,9 @@ import { useLocation } from "react-router-dom";
 const App = () => {
   const location = useLocation();
 
-  // Hide navbar on login page
-  const hideNavbar = location.pathname === "/login";
+  const hideNavbar =
+    location.pathname === "/login" ||
+    location.pathname === "/register";
 
   return (
     <>

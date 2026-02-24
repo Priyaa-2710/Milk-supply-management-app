@@ -1,5 +1,6 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "../pages/Login";
+import Register from "../pages/Register";
 import Dashboard from "../pages/Dashboard";
 import MilkPrice from "../pages/MilkPrice";
 import ProtectedRoute from "../components/ProtectedRoute";
@@ -9,12 +10,22 @@ import CustomerLedger from "../pages/CustomerLedger";
 import Customers from "../pages/Customers";
 
 const AppRoutes = () => {
+  const token = localStorage.getItem("token");
+
   return (
     <Routes>
-      {/* Public */}
-      <Route path="/login" element={<Login />} />
+      {/* Public Routes */}
+      <Route
+        path="/login"
+        element={!token ? <Login /> : <Navigate to="/" replace />}
+      />
 
-      {/* Protected */}
+      <Route
+        path="/register"
+        element={!token ? <Register /> : <Navigate to="/" replace />}
+      />
+
+      {/* Protected Routes */}
       <Route
         path="/"
         element={
@@ -32,6 +43,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/milk-entry"
         element={
@@ -40,6 +52,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/monthly-bill"
         element={
@@ -48,6 +61,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/ledger/:customerPhone"
         element={
@@ -65,6 +79,9 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+
+      {/* Fallback Route */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

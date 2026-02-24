@@ -3,19 +3,42 @@ const Customer = require("../models/Customer");
 // Add customer
 const createCustomer = async (req, res) => {
   try {
+    if (!req.admin || !req.admin.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { name, phone, address } = req.body;
+
+    if (!name || !phone) {
+      return res.status(400).json({ message: "Name and phone are required" });
+    }
+
     const customer = await Customer.create({
-      ...req.body,
+      name,
+      phone,
+      address,
       user: req.admin.id
     });
 
     res.status(201).json(customer);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    // Handle duplicate key error properly
+    if (error.code === 11000) {
+      return res.status(400).json({
+        message: "Customer with this phone already exists"
+      });
+    }
+
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Get active customers (ONLY for logged-in admin)
+// Get active customers
 const getCustomers = async (req, res) => {
+  if (!req.admin || !req.admin.id) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
   const customers = await Customer.find({
     user: req.admin.id,
     isActive: true
@@ -24,7 +47,7 @@ const getCustomers = async (req, res) => {
   res.json(customers);
 };
 
-// Update customer (scoped by user)
+// Update customer
 const updateCustomer = async (req, res) => {
   try {
     const updated = await Customer.findOneAndUpdate(
@@ -39,16 +62,20 @@ const updateCustomer = async (req, res) => {
 
     res.json(updated);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    if (error.code === 11000) {
+      return res.status(400).json({
+        message: "Customer with this phone already exists"
+      });
+    }
+
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Deactivate customer
+// Deactivate
 const deactivateCustomer = async (req, res) => {
-  const { phone } = req.params;
-
   const customer = await Customer.findOneAndUpdate(
-    { phone, user: req.admin.id },
+    { phone: req.params.phone, user: req.admin.id },
     { isActive: false },
     { new: true }
   );
@@ -60,7 +87,7 @@ const deactivateCustomer = async (req, res) => {
   res.json({ message: "Customer deactivated", customer });
 };
 
-// Get inactive customers
+// Inactive list
 const getInactiveCustomers = async (req, res) => {
   const customers = await Customer.find({
     user: req.admin.id,
@@ -70,12 +97,10 @@ const getInactiveCustomers = async (req, res) => {
   res.json(customers);
 };
 
-// Reactivate customer
+// Reactivate
 const reactivateCustomer = async (req, res) => {
-  const { phone } = req.params;
-
   const customer = await Customer.findOneAndUpdate(
-    { phone, user: req.admin.id },
+    { phone: req.params.phone, user: req.admin.id },
     { isActive: true },
     { new: true }
   );

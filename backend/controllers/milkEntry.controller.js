@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const MilkEntry = require("../models/MilkEntry");
 const MilkPrice = require("../models/MilkPrice");
 const Customer = require("../models/Customer");
@@ -5,9 +6,12 @@ const Customer = require("../models/Customer");
 // Add milk entry
 const addMilkEntry = async (req, res) => {
   try {
+    if (!req.admin || !req.admin.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const { customerPhone, date, session, quantity } = req.body;
 
-    // Ensure customer belongs to logged-in admin
     const customer = await Customer.findOne({
       phone: customerPhone,
       user: req.admin.id
@@ -17,7 +21,6 @@ const addMilkEntry = async (req, res) => {
       return res.status(404).json({ message: "Customer not found" });
     }
 
-    // Get latest price for this admin
     const latestPrice = await MilkPrice.findOne({
       user: req.admin.id
     }).sort({ effectiveFrom: -1 });
@@ -44,55 +47,42 @@ const addMilkEntry = async (req, res) => {
   }
 };
 
-// Get entries by date (scoped)
+// Get entries by date
 const getMilkEntriesByDate = async (req, res) => {
   try {
+    if (!req.admin || !req.admin.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const { date } = req.query;
 
     if (!date) {
       return res.status(400).json({ message: "Date is required" });
     }
 
+    const adminId = new mongoose.Types.ObjectId(req.admin.id);
+
     const entries = await MilkEntry.aggregate([
       {
         $match: {
           date,
-          user: new require("mongoose").Types.ObjectId(req.admin.id)
+          user: adminId
         }
       },
-
       {
         $lookup: {
           from: "customers",
-          let: { phone: "$customerPhone" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: ["$phone", "$$phone"] },
-                    {
-                      $eq: [
-                        "$user",
-                        new require("mongoose").Types.ObjectId(req.admin.id)
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          ],
+          localField: "customerPhone",
+          foreignField: "phone",
           as: "customer"
         }
       },
-
       {
         $unwind: {
           path: "$customer",
           preserveNullAndEmptyArrays: true
         }
       },
-
       {
         $project: {
           _id: 1,
@@ -105,7 +95,6 @@ const getMilkEntriesByDate = async (req, res) => {
           amount: 1
         }
       },
-
       { $sort: { session: 1 } }
     ]);
 
@@ -115,13 +104,11 @@ const getMilkEntriesByDate = async (req, res) => {
   }
 };
 
-// Get entries by customer (scoped)
+// Get entries by customer
 const getEntriesByCustomer = async (req, res) => {
   try {
-    const { customerPhone } = req.params;
-
     const entries = await MilkEntry.find({
-      customerPhone,
+      customerPhone: req.params.customerPhone,
       user: req.admin.id
     }).sort({ date: -1 });
 

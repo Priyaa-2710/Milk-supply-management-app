@@ -1,4 +1,3 @@
-// Handles creating and retrieving daily milk entries
 const MilkEntry = require("../models/MilkEntry");
 const MilkPrice = require("../models/MilkPrice");
 const Customer = require("../models/Customer");
@@ -8,14 +7,21 @@ const addMilkEntry = async (req, res) => {
   try {
     const { customerPhone, date, session, quantity } = req.body;
 
-    // Check if customer exists
-    const customer = await Customer.findOne({ phone: customerPhone });
+    // Ensure customer belongs to logged-in admin
+    const customer = await Customer.findOne({
+      phone: customerPhone,
+      user: req.admin.id
+    });
+
     if (!customer) {
       return res.status(404).json({ message: "Customer not found" });
     }
 
-    // Get latest milk price
-    const latestPrice = await MilkPrice.findOne().sort({ effectiveFrom: -1 });
+    // Get latest price for this admin
+    const latestPrice = await MilkPrice.findOne({
+      user: req.admin.id
+    }).sort({ effectiveFrom: -1 });
+
     if (!latestPrice) {
       return res.status(400).json({ message: "No milk price set" });
     }
@@ -23,6 +29,7 @@ const addMilkEntry = async (req, res) => {
     const amount = quantity * latestPrice.pricePerLiter;
 
     const entry = await MilkEntry.create({
+      user: req.admin.id,
       customerPhone,
       date,
       session,
@@ -37,8 +44,7 @@ const addMilkEntry = async (req, res) => {
   }
 };
 
-// Get milk entries for a date
-// Get milk entries for a date (with customer name)
+// Get entries by date (scoped)
 const getMilkEntriesByDate = async (req, res) => {
   try {
     const { date } = req.query;
@@ -48,13 +54,34 @@ const getMilkEntriesByDate = async (req, res) => {
     }
 
     const entries = await MilkEntry.aggregate([
-      { $match: { date } },
+      {
+        $match: {
+          date,
+          user: new require("mongoose").Types.ObjectId(req.admin.id)
+        }
+      },
 
       {
         $lookup: {
           from: "customers",
-          localField: "customerPhone",
-          foreignField: "phone",
+          let: { phone: "$customerPhone" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$phone", "$$phone"] },
+                    {
+                      $eq: [
+                        "$user",
+                        new require("mongoose").Types.ObjectId(req.admin.id)
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ],
           as: "customer"
         }
       },
@@ -88,16 +115,24 @@ const getMilkEntriesByDate = async (req, res) => {
   }
 };
 
-
-// Get all entries for a customer
+// Get entries by customer (scoped)
 const getEntriesByCustomer = async (req, res) => {
   try {
     const { customerPhone } = req.params;
-    const entries = await MilkEntry.find({ customerPhone }).sort({ date: -1 });
+
+    const entries = await MilkEntry.find({
+      customerPhone,
+      user: req.admin.id
+    }).sort({ date: -1 });
+
     res.json(entries);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-module.exports={addMilkEntry,getMilkEntriesByDate,getEntriesByCustomer}
+module.exports = {
+  addMilkEntry,
+  getMilkEntriesByDate,
+  getEntriesByCustomer
+};

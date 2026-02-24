@@ -1,4 +1,3 @@
-// Handles aggregations for the dashboard
 const MilkEntry = require("../models/MilkEntry");
 const MonthlyBill = require("../models/MonthlyBill");
 const Customer = require("../models/Customer");
@@ -6,9 +5,12 @@ const Customer = require("../models/Customer");
 // Get today's milk totals and amount
 const getTodaySummary = async (req, res) => {
   try {
-    const today = req.query.date || new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const today = req.query.date || new Date().toISOString().slice(0, 10);
 
-    const entries = await MilkEntry.find({ date: today });
+    const entries = await MilkEntry.find({
+      date: today,
+      user: req.admin.id
+    });
 
     let morningTotal = 0;
     let eveningTotal = 0;
@@ -35,12 +37,13 @@ const getTodaySummary = async (req, res) => {
 const getPendingBills = async (req, res) => {
   try {
     const month =
-      req.query.month || new Date().toISOString().slice(0, 7); // YYYY-MM
+      req.query.month || new Date().toISOString().slice(0, 7);
 
     const bills = await MonthlyBill.find({
-  month,
-  unpaidAmount: { $gt: 0 }
-}).sort({ customerPhone: 1 });
+      month,
+      unpaidAmount: { $gt: 0 },
+      user: req.admin.id
+    }).sort({ customerPhone: 1 });
 
     res.json(bills);
   } catch (error) {
@@ -48,12 +51,15 @@ const getPendingBills = async (req, res) => {
   }
 };
 
-
 // Get total collection for a month
 const getMonthlyCollection = async (req, res) => {
   try {
     const { month } = req.query;
-    const bills = await MonthlyBill.find({ month });
+
+    const bills = await MonthlyBill.find({
+      month,
+      user: req.admin.id
+    });
 
     const totalAmount = bills.reduce((s, b) => s + b.totalAmount, 0);
     const totalPaid = bills.reduce((s, b) => s + b.paidAmount, 0);
@@ -69,6 +75,5 @@ const getMonthlyCollection = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 module.exports={getTodaySummary,getPendingBills,getMonthlyCollection}

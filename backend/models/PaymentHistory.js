@@ -2,12 +2,17 @@ const mongoose = require("mongoose");
 
 const paymentHistorySchema = new mongoose.Schema(
   {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Admin",
+      required: true
+    },
     customerPhone: {
       type: String,
       required: true
     },
     month: {
-      type: String, // YYYY-MM
+      type: String,
       required: true
     },
     amountPaid: {
@@ -15,12 +20,12 @@ const paymentHistorySchema = new mongoose.Schema(
       required: true
     },
     paymentDate: {
-      type: String, // YYYY-MM-DD
+      type: String,
       required: true
     },
     method: {
       type: String,
-      default: "cash" // future-proof
+      default: "cash"
     }
   },
   { timestamps: true }

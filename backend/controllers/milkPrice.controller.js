@@ -1,43 +1,46 @@
-// Handles logic for adding and fetching milk prices.
 const MilkPrice = require("../models/MilkPrice");
 
-// Add a new price
+// Add a new milk price
 const addPrice = async (req, res) => {
   try {
     const { pricePerLiter, effectiveFrom } = req.body;
+
     const price = await MilkPrice.create({
       pricePerLiter,
-      effectiveFrom: effectiveFrom || Date.now()
+      effectiveFrom: effectiveFrom || Date.now(),
+      user: req.admin.id
     });
+
     res.status(201).json(price);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Get latest active price
+// Get latest price
 const getCurrentPrice = async (req, res) => {
   try {
-    const price = await MilkPrice.findOne()
-      .sort({ effectiveFrom: -1 }); // most recent
-    if (!price) {
-      return res.status(404).json({ message: "No price set yet" });
-    }
+    const price = await MilkPrice.findOne({
+      user: req.admin.id
+    }).sort({ effectiveFrom: -1 });
+
     res.json(price);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Get all prices (history)
+// Get price history
 const getPriceHistory = async (req, res) => {
   try {
-    const prices = await MilkPrice.find().sort({ effectiveFrom: -1 });
+    const prices = await MilkPrice.find({
+      user: req.admin.id
+    }).sort({ effectiveFrom: -1 });
+
     res.json(prices);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-
-module.exports= {addPrice,getCurrentPrice,getPriceHistory}
+module.exports = { addPrice, getCurrentPrice, getPriceHistory };

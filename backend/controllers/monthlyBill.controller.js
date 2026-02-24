@@ -8,13 +8,18 @@ const generateMonthlyBills = async (req, res) => {
   try {
     const { month } = req.body;
 
-    const customers = await Customer.find({ isActive: true });
+    const customers = await Customer.find({
+      isActive: true,
+      user: req.admin.id
+    });
+
     const bills = [];
 
     for (const customer of customers) {
       const entries = await MilkEntry.find({
         customerPhone: customer.phone,
-        date: { $regex: `^${month}` }
+        date: { $regex: `^${month}` },
+        user: req.admin.id
       });
 
       if (entries.length === 0) continue;
@@ -24,7 +29,8 @@ const generateMonthlyBills = async (req, res) => {
 
       const existingBill = await MonthlyBill.findOne({
         customerPhone: customer.phone,
-        month
+        month,
+        user: req.admin.id
       });
 
       let paidAmount = existingBill?.paidAmount || 0;
@@ -33,12 +39,17 @@ const generateMonthlyBills = async (req, res) => {
       if (unpaidAmount < 0) unpaidAmount = 0;
 
       const bill = await MonthlyBill.findOneAndUpdate(
-        { customerPhone: customer.phone, month },
+        {
+          customerPhone: customer.phone,
+          month,
+          user: req.admin.id
+        },
         {
           totalQuantity,
           totalAmount,
           paidAmount,
-          unpaidAmount
+          unpaidAmount,
+          user: req.admin.id
         },
         { new: true, upsert: true }
       );
@@ -56,7 +67,12 @@ const generateMonthlyBills = async (req, res) => {
 const getMonthlyBills = async (req, res) => {
   try {
     const { month } = req.query;
-    const bills = await MonthlyBill.find({ month }).sort({ customerPhone: 1 });
+
+    const bills = await MonthlyBill.find({
+      month,
+      user: req.admin.id
+    }).sort({ customerPhone: 1 });
+
     res.json(bills);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -68,7 +84,12 @@ const updateBillStatus = async (req, res) => {
   try {
     const { customerPhone, month, amountPaid } = req.body;
 
-    const bill = await MonthlyBill.findOne({ customerPhone, month });
+    const bill = await MonthlyBill.findOne({
+      customerPhone,
+      month,
+      user: req.admin.id
+    });
+
     if (!bill) {
       return res.status(404).json({ message: "Bill not found" });
     }
@@ -92,8 +113,10 @@ const getCustomerLedger = async (req, res) => {
   try {
     const { customerPhone } = req.params;
 
-    const bills = await MonthlyBill.find({ customerPhone })
-      .sort({ month: -1 });
+    const bills = await MonthlyBill.find({
+      customerPhone,
+      user: req.admin.id
+    }).sort({ month: -1 });
 
     res.json(bills);
   } catch (error) {
@@ -101,5 +124,9 @@ const getCustomerLedger = async (req, res) => {
   }
 };
 
-
-module.exports={generateMonthlyBills,getMonthlyBills,updateBillStatus,getCustomerLedger}
+module.exports = {
+  generateMonthlyBills,
+  getMonthlyBills,
+  updateBillStatus,
+  getCustomerLedger
+};

@@ -5,32 +5,37 @@ const addPayment = async (req, res) => {
   try {
     const { customerPhone, month, amountPaid } = req.body;
 
-    // Basic validation
     if (!customerPhone || !month || !amountPaid || amountPaid <= 0) {
       return res.status(400).json({ message: "Invalid payment data" });
     }
 
     const today = new Date().toISOString().slice(0, 10);
 
-    // Find monthly bill first (source of truth)
-    const bill = await MonthlyBill.findOne({ customerPhone, month });
+    // Find monthly bill (scoped by user)
+    const bill = await MonthlyBill.findOne({
+      customerPhone,
+      month,
+      user: req.admin.id
+    });
+
     if (!bill) {
       return res.status(404).json({ message: "Bill not found" });
     }
 
-    // 🔒 HARD BLOCK: prevent over-payment
+    // Prevent over-payment
     if (amountPaid > bill.unpaidAmount) {
       return res.status(400).json({
         message: `Payment exceeds pending amount (₹${bill.unpaidAmount})`,
       });
     }
 
-    // Save payment record
+    // Save payment record (scoped)
     await PaymentHistory.create({
       customerPhone,
       month,
       amountPaid,
       paymentDate: today,
+      user: req.admin.id
     });
 
     // Update monthly bill
@@ -45,7 +50,6 @@ const addPayment = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
- 
 
 const getPaymentHistory = async (req, res) => {
   try {
@@ -53,7 +57,8 @@ const getPaymentHistory = async (req, res) => {
 
     const payments = await PaymentHistory.find({
       customerPhone,
-      month
+      month,
+      user: req.admin.id
     }).sort({ paymentDate: 1 });
 
     res.json(payments);
@@ -62,5 +67,4 @@ const getPaymentHistory = async (req, res) => {
   }
 };
 
-
-module.exports = { addPayment , getPaymentHistory};
+module.exports = { addPayment, getPaymentHistory };

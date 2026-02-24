@@ -1,26 +1,33 @@
-// Defines how customer data is stored and validated in database
 const mongoose = require("mongoose");
 
-const customerSchema =new mongoose.Schema(
-    {
-        name :{
-            type:String,
-            required:true,
-            trim:true
-        },
-        phone :{type:String,
-            required:true,
-            unique:true
-        },
-        address:{
-            type:String
-        },
-        isActive:{
-            type:Boolean,
-            default:true
-        },
+const customerSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Admin",
+      required: true
     },
-    {timestamps:true}
-)
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    phone: {
+      type: String,
+      required: true
+    },
+    address: {
+      type: String
+    },
+    isActive: {
+      type: Boolean,
+      default: true
+    }
+  },
+  { timestamps: true }
+);
 
-module.exports= mongoose.model("Customer", customerSchema)
+// Ensure phone is unique PER USER, not globally
+customerSchema.index({ phone: 1, user: 1 }, { unique: true });
+
+module.exports = mongoose.model("Customer", customerSchema);

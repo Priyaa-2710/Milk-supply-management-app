@@ -1,14 +1,18 @@
-// Store daily milk transactions per customer
 const mongoose = require("mongoose");
 
 const milkEntrySchema = new mongoose.Schema(
   {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Admin",
+      required: true
+    },
     customerPhone: {
       type: String,
       required: true
     },
     date: {
-      type: String, // YYYY-MM-DD format for easier aggregation
+      type: String,
       required: true
     },
     session: {

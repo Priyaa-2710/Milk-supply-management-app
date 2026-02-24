@@ -1,14 +1,18 @@
-// Stores monthly aggregation per customer
 const mongoose = require("mongoose");
 
 const monthlyBillSchema = new mongoose.Schema(
   {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Admin",
+      required: true
+    },
     customerPhone: {
       type: String,
       required: true
     },
     month: {
-      type: String, // YYYY-MM
+      type: String,
       required: true
     },
     totalQuantity: {
@@ -19,11 +23,10 @@ const monthlyBillSchema = new mongoose.Schema(
       type: Number,
       required: true
     },
-     paidAmount: {
+    paidAmount: {
       type: Number,
       default: 0
     },
-
     unpaidAmount: {
       type: Number,
       default: 0

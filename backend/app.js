@@ -14,14 +14,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use("/customers",customerRoutes)
-// Protect all admin dashboard routes
+
+app.use("/customers", authMiddleware, customerRoutes)
+
 app.use("/milk_price",authMiddleware,milkPriceRoutes)
 app.use("/milk-entry",authMiddleware,milkEntryRoutes)
 app.use("/monthly-bill",authMiddleware,monthlyBillRoutes)
 app.use("/admin",authMiddleware,adminRoutes)
 app.use("/auth", authRoutes);
-app.use("/payments", paymentRoutes);
-
+app.use("/payments", authMiddleware, paymentRoutes);
 
 module.exports=app;
